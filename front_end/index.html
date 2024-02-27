@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
+  <script src="script.js"></script>
+</head>
+
+<body>
+  <div class="container py-5" x-data="{
+    contacts: [],
+    newContact: { first_name: '', second_name: '', birthday: '', mail: '', addition: ''},
+    error: null,
+    async getContacts() {
+      try {
+        this.contacts = await window.getContacts();
+      } catch (err) {
+        this.error = err.message;
+      }
+    },
+    async createContact() {
+      try {
+        await window.createContact(this.newContact);
+        this.newContact = { first_name: '', first_name: '', birthday: '', mail: '', addition: '' };
+        await this.getContacts();
+      } catch (err) {
+        this.error = err.message;
+      }
+    },
+    async updateContact(contact) {
+      try {
+        await window.updateContact(contact);
+        contact.editing = false;
+        await this.getContacts();
+      } catch (err) {
+        this.error = err.message;
+      }
+    },
+    async deleteContact(id) {
+      try {
+        await window.deleteContact(id);
+        this.contacts = this.contacts.filter(contact => contact.id !== id);
+      } catch (err) {
+        this.error = err.message;
+      }
+    },
+    init() { this.getContacts(); }
+  }" x-init="init()">
+    <div class="row">
+      <div class="col-md-6 offset-md-3">
+        <h1 class="mb-4 text-center">CONTACTS App</h1>
+
+        <!-- Отображение сообщения об ошибке -->
+        <div x-show="error" class="alert alert-danger" x-text="error"></div>
+        <div class="row mb-3">
+
+          <div class="input-group mb-3">
+            <input type="text" x-model="newContact.first_name" class="form-control" placeholder="Contact first_name">
+          </div>
+          <div class="input-group mb-3">
+            <input type="text" x-model="newContact.second_name" class="form-control" placeholder="Contact second_name">
+          </div>
+          <div class="input-group mb-3">
+            <input type="text" x-model="newContact.mail" class="form-control" placeholder="Contact mail">
+          </div>
+          <div class="input-group mb-3">
+            <input type="date" x-model="newContact.birthday" class="form-control" placeholder="Contact birthday">
+          </div>
+          <div class="input-group mb-3">
+            <input type="text" x-model="newContact.addition" class="form-control" placeholder="Contact addition">
+          </div>
+          <button @click="createContact" class="btn btn-primary">Add</button>
+        </div>
+        <ul class="list-group">
+          <template x-for="contact in contacts" :key="contact.id">
+            <li class="list-group-item">
+              <div x-show="!contact.editing">
+                <div>
+                  <strong>full_name:</strong>
+                  <span @dblclick="contact.editing = true" x-text="contact.first_name"></span>
+                  <span @dblclick="contact.editing = true" x-text="contact.second_name"></span>
+                </div>
+                <!-- <div><strong>mail:</strong> <span @dblclick="contact.editing = true" x-text="contact.mail"></span></div> -->
+                <div><strong>id:</strong> <span @dblclick="contact.editing = true" x-text="contact.id"></span></div>
+                <button @click="deleteContact(contact.id)" class="btn btn-sm btn-danger">Delete</button>
+                <button @click="contact.editing = true" class="btn btn-sm btn-warning">Edit</button>
+              </div>
+              <div x-show="contact.editing">
+                <input type="text" class="form-control" x-model="contact.first_name">
+                <input type="text" class="form-control" x-model="contact.second_name">
+                <input type="text" class="form-control" x-model="contact.birthday">
+                <input type="text" class="form-control" x-model="contact.mail">
+                <input type="text" class="form-control" x-model="contact.addition">
+                <div x-text="contact.id"></div>
+                <div x-text="contact.created_at"></div>
+
+                <button @click="updateContact(contact)" class="btn btn-sm btn-success">Save</button>
+                <button @click="contact.editing = false" class="btn btn-sm btn-secondary">Cancel</button>
+              </div>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

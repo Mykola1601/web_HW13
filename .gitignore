@@ -1,0 +1,9 @@
+
+__pycache__
+
+config.py
+test.py
+config.ini
+db.sqlite3
+uploads/*
+src/conf/config.py
