@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "hw13"
+version = "0.1.0"
+description = ""
+authors = ["Mykola1601 <nik160186@gmail.com>"]
+#readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+python-dotenv = "^1.0.1"
+redis = "^5.0.2"
+numpy = "^1.22.2"
+replit = "^3.2.4"
+Flask = "^2.2.0"
+urllib3 = "^1.26.12"
+requests = "^2.28.1"
+xmltodict = "^0.13.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
