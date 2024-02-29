@@ -1,38 +1,50 @@
+
 import uvicorn
 import pathlib
 from sqlalchemy import text
-# from sqlalchemy.sql import  select
+import redis.asyncio as redis
+from fastapi_limiter import FastAPILimiter
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, File, UploadFile, status, HTTPException, Depends
 
 from src.database.db import get_db
-from src.routes import  contacts, auth
+from src.conf.config import config
+from src.routes import  contacts, auth, users
 from middlewares import CustomHeaderMiddleware
-from fastapi.middleware.cors import CORSMiddleware
 
 
 MAX_FILE_SIZE = 1_000_000  # 1Mb
 
 app = FastAPI()
 
-origins = ["*"]
+origins = [ 
+    "http://localhost:3000",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["*"],        # GET,POST...
     allow_headers=["*"]         )
 
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-# app.mount("/static", StaticFiles(directory="src/stacic") )
-
 app.add_middleware(CustomHeaderMiddleware)
 
+
+app.include_router(users.router, prefix='/api')
 app.include_router(auth.router, prefix='/api')
 app.include_router(contacts.router, prefix='/api')
 
+
+@app.on_event("startup")
+async def startup():
+    r = await redis.Redis(host=config.REDIS_DOMAIN, port=config.REDIS_PORT, db=0, encoding="utf-8", password=config.REDIS_PASS)
+    await FastAPILimiter.init(r)
+    
 
 @app.get("/")
 def read_root():

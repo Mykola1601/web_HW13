@@ -1,20 +1,22 @@
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+from fastapi.responses import FileResponse
+from fastapi_limiter.depends import RateLimiter
 from fastapi.security import OAuth2PasswordRequestForm, HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import APIRouter, HTTPException, Depends, status, Path, BackgroundTasks, Request, Response
+from src.database.db import get_db
 from src.services.mail import send_email
 from src.services.auth import auth_service 
-from src.database.db import  get_db
-from fastapi.responses import FileResponse
-from fastapi import APIRouter, HTTPException, Depends, status, Path, BackgroundTasks, Request, Response
-from sqlalchemy.orm import Session
-from sqlalchemy import text
-from src.database.db import get_db
-from src.schemas.auth import UserResponse, TokenModel, UserModel, RequestEmail
 from src.repository import users as repository_users
+from src.schemas.auth import UserResponse, TokenModel, UserModel, RequestEmail
+
 
 router = APIRouter(prefix='/auth', tags=["auth"])
 get_refresh_token = HTTPBearer()
 
 
-@router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED,
+            dependencies=[Depends(RateLimiter(times=2, seconds=5))])
 async def signup(body: UserModel, bt:BackgroundTasks, request:Request, db: Session = Depends(get_db)):
     exist_user = await repository_users.get_user_by_mail(body.mail, db)
     if exist_user:
@@ -25,11 +27,11 @@ async def signup(body: UserModel, bt:BackgroundTasks, request:Request, db: Sessi
     return new_user
 
 
-@router.post("/login", response_model = TokenModel)
+@router.post("/login", response_model = TokenModel,  dependencies=[Depends(RateLimiter(times=2, seconds=5))])
 async def login(body: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = await repository_users.get_user_by_mail(body.username, db)
+    user = await repository_users.get_user_by_mail(body.username , db)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or p")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user")
     if not user.confirmed:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email verifi")
     if not auth_service.verify_password(body.password, user.password):
@@ -67,7 +69,7 @@ async def confirmed_email(token: str, db: Session = Depends(get_db)):
     return {"message": "Email confirmed"}
 
 
-@router.post('/request_email')
+@router.post('/request_email',  dependencies=[Depends(RateLimiter(times=1, seconds=5))])
 async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, request: Request,
                         db: Session = Depends(get_db)):
     user = await repository_users.get_user_by_mail(body.mail, db)
