@@ -1,13 +1,18 @@
 
 import uvicorn
 import pathlib
+from pathlib import Path
 from sqlalchemy import text
+from typing import Callable
 import redis.asyncio as redis
+from ipaddress import ip_address
 from fastapi_limiter import FastAPILimiter
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, File, UploadFile, status, HTTPException, Depends
+from fastapi import FastAPI, File, UploadFile, status, HTTPException, Depends, Request
 
 from src.database.db import get_db
 from src.conf.config import config
@@ -30,8 +35,10 @@ app.add_middleware(
     allow_methods=["*"],        # GET,POST...
     allow_headers=["*"]         )
 
+BASE_DIR = Path(".")
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
+app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.add_middleware(CustomHeaderMiddleware)
 
 
@@ -40,15 +47,29 @@ app.include_router(auth.router, prefix='/api')
 app.include_router(contacts.router, prefix='/api')
 
 
+banned_ips = [ip_address("192.168.1.1"), ip_address("192.168.1.2") ]
+
+
+@app.middleware("http")
+async def ban_ips(request: Request, call_next: Callable):
+    ip = ip_address(request.client.host)
+    if ip in banned_ips:
+        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={"detail": "You are banned"})
+    response = await call_next(request)
+    return response
+
+
 @app.on_event("startup")
 async def startup():
     r = await redis.Redis(host=config.REDIS_DOMAIN, port=config.REDIS_PORT, db=0, encoding="utf-8", password=config.REDIS_PASS)
     await FastAPILimiter.init(r)
     
 
-@app.get("/")
-def read_root():
-    return {"message": "Hello World"}
+templates = Jinja2Templates(directory=BASE_DIR / "src" / "templates")
+
+@app.get("/", response_class=HTMLResponse )
+def index(request:Request):
+    return templates.TemplateResponse("index.html", {"request":request, "our":"Build group python"})
 
 
 @app.get("/api/healthchecker")
@@ -88,5 +109,6 @@ async def upload_file(file: UploadFile = File()):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)
 
+# uvicorn main:app --host localhost --port 8000 --reload
 
     

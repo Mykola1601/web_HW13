@@ -5,6 +5,8 @@ from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 from jose import JWTError, jwt
+import redis
+import pickle
 
 from src.database.db import get_db
 from src.repository import users as reposytory_users
@@ -16,6 +18,12 @@ class Auth:
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     SECRET_KEY = config.SECRET_KEY_JWT
     ALGORITHM = config.ALGORITHM
+    cache = redis.Redis (
+        host=config.REDIS_DOMAIN, 
+        port=config.REDIS_PORT,
+        db=0, encoding="utf-8", 
+        password=config.REDIS_PASS
+    )
 
     def verify_password(self, plain_password, hashed_password):
         return self.pwd_context.verify(plain_password, hashed_password)
@@ -78,9 +86,19 @@ class Auth:
         except JWTError as e:
             raise credentials_exception
 
-        user = await reposytory_users.get_user_by_mail(email, db)
+        user_hash = str(email)
+        user = self.cache.get(user_hash)
+
         if user is None:
-            raise credentials_exception
+            print("user from DB")
+            user = await reposytory_users.get_user_by_mail(email, db)
+            if user is None:
+                raise credentials_exception
+            self.cache.set(user_hash, pickle.dumps(user))
+            self.cache.expire(user_hash, time=600)
+        else:
+            print("user from ceche")
+            user = pickle.loads(user)
         return user
 
 
