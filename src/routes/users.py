@@ -32,15 +32,11 @@ async  def get_current_photo(file:UploadFile=File(), user:User=Depends(auth_serv
                             db: Session = Depends(get_db)):
     public_id = f"python/{user.mail}"
     result = cloudinary.uploader.upload(file.file, public_id=public_id, owerite=True)
-    print(result)
     result_url = cloudinary.CloudinaryImage(public_id).build_url(width=250, heigh=250, crop="fill", version=result.get("version"))
-    user = await repository_users.update_avater_url(user.mail, result_url, db)
+    user = await repository_users.update_avatar_url(user.mail, result_url, db)
     auth_service.cache.set(user.mail, pickle.dumps(user))
     auth_service.cache.expire(user.mail, time=600)
     return user
-
-
-
 
 
 

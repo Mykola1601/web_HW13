@@ -2,7 +2,7 @@
 __pycache__
 postgres-data/
 test.py
-config.ini
+
 db.sqlite3
 uploads/*
 src/conf/config.py
