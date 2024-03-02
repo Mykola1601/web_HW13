@@ -31,7 +31,7 @@ class Auth:
     def get_password_hash(self, password: str):
         return self.pwd_context.hash(password)
 
-    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="src/auth/login")
+    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 
     async def create_access_token(self, data: dict, expires_delta: Optional[float] = None):

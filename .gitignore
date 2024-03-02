@@ -1,7 +1,6 @@
 .env
 __pycache__
 postgres-data/
-config.py
 test.py
 config.ini
 db.sqlite3

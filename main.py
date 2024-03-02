@@ -25,7 +25,7 @@ MAX_FILE_SIZE = 1_000_000  # 1Mb
 app = FastAPI()
 
 origins = [ 
-    "http://localhost:3000",
+    "*",
     ]
 
 app.add_middleware(
@@ -109,6 +109,8 @@ async def upload_file(file: UploadFile = File()):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)
 
+
+# docker-compose up
 # uvicorn main:app --host localhost --port 8000 --reload
 
     
