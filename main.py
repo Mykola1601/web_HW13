@@ -7,11 +7,11 @@ from typing import Callable
 import redis.asyncio as redis
 from ipaddress import ip_address
 from fastapi_limiter import FastAPILimiter
-from fastapi.responses import JSONResponse, HTMLResponse
-from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi import FastAPI, File, UploadFile, status, HTTPException, Depends, Request
 
 from src.database.db import get_db
